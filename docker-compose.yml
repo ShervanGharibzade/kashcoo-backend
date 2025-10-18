@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  # 🌱 PostgreSQL (این سرویس را اجرا خواهیم کرد)
+  db:
+    image: postgres:16-alpine
+    container_name: backpack_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: backpack_db
+    # اگر می‌خواهید بین اجراها داده‌ها باقی بمانند:
+    # volumes:
+    #   - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
