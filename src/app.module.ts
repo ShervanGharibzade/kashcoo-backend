@@ -26,6 +26,7 @@ import { Like } from './entities/like.entity';
 import { FavoriteList } from './entities/favorite-list.entity';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
 	imports: [
@@ -51,6 +52,7 @@ import { OrderItem } from './entities/order-item.entity';
 		ReviewsModule,
 		LikesModule,
 		FavoriteListModule,
+		AdminModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

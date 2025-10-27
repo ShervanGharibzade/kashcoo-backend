@@ -12,16 +12,29 @@ export class ProductsService {
 		private readonly productRepo: Repository<Product>,
 	) {}
 
+	// 🟩 ایجاد محصول
 	async create(dto: CreateProductDto): Promise<Product> {
-		// ایجاد مستقیم از DTO (بدون brandRepo)
 		const product = this.productRepo.create(dto);
 		return this.productRepo.save(product);
 	}
 
+	async getAllCategories(): Promise<string[]> {
+		// 👇 فقط ستون category رو می‌گیریم
+		const result = await this.productRepo
+			.createQueryBuilder('product')
+			.select('DISTINCT product.category', 'category')
+			.where('product.category IS NOT NULL')
+			.orderBy('product.category', 'ASC')
+			.getRawMany();
+
+		// 👇 خروجی: [{ category: 'کوله‌پشتی' }, { category: 'کیف لپ‌تاپ' }, ...]
+		return result.map((row) => row.category);
+	}
+
+	// 🟩 دریافت همه محصولات با فیلترینگ و مرتب‌سازی پویا
 	async findAll(query?: any): Promise<Product[]> {
 		const { search, category, priceMin, priceMax, sort } = query || {};
 
-		// ساخت شرط فیلتر پویا
 		const where: any = {};
 
 		// 🔹 جست‌وجو در نام و توضیحات
@@ -29,27 +42,31 @@ export class ProductsService {
 			where.name = ILike(`%${search}%`);
 		}
 
-		// 🔹 اگر دسته‌بندی دارید
+		// 🔹 فیلتر دسته‌بندی (category)
 		if (category) {
 			where.category = ILike(`%${category}%`);
 		}
 
-		// 🔹 محدوده قیمت
-		if (priceMin && priceMax) {
-			where.price = Between(Number(priceMin), Number(priceMax));
-		} else if (priceMin) {
-			where.price = MoreThanOrEqual(Number(priceMin));
-		} else if (priceMax) {
-			where.price = LessThanOrEqual(Number(priceMax));
+		// 🔹 محدودۀ قیمت
+		const min = Number(priceMin);
+		const max = Number(priceMax);
+
+		if (!isNaN(min) && !isNaN(max)) {
+			where.price = Between(min, max);
+		} else if (!isNaN(min)) {
+			where.price = MoreThanOrEqual(min);
+		} else if (!isNaN(max)) {
+			where.price = LessThanOrEqual(max);
 		}
 
-		// چگونه مرتب‌سازی انجام شود
+		// 🔹 مرتب‌سازی
 		let order: any = {};
 		switch (sort) {
 			case 'priceAsc':
 				order = { price: 'ASC' };
 				break;
 			case 'priceDesc':
+			case 'priceHigh':
 				order = { price: 'DESC' };
 				break;
 			case 'newest':
@@ -60,34 +77,42 @@ export class ProductsService {
 				break;
 			default:
 				order = { id: 'DESC' };
-				break;
 		}
 
-		// اجرای Query نهایی
-		return await this.productRepo.find({
+		// 🟢 اجرای Query و افزودن relations لازم
+		return this.productRepo.find({
 			where,
 			order,
+			relations: ['images', 'reviews'], // برای صفحه تکی و گالری
 		});
 	}
 
+	// 🟩 جست‌وجو بر اساس لیست IDها (برای مقایسه یا علاقه‌مندی‌ها)
 	async findByIds(ids: number[]) {
 		return this.productRepo.find({
 			where: { id: In(ids) },
+			relations: ['images'],
 		});
 	}
 
+	// 🟩 دریافت تکی محصول
 	async findOne(id: number): Promise<Product> {
-		const product = await this.productRepo.findOne({ where: { id } });
+		const product = await this.productRepo.findOne({
+			where: { id },
+			relations: ['images', 'reviews'],
+		});
 		if (!product) throw new NotFoundException('Product not found');
 		return product;
 	}
 
+	// 🟩 بروزرسانی محصول
 	async update(id: number, dto: UpdateProductDto): Promise<Product> {
 		const product = await this.findOne(id);
 		Object.assign(product, dto);
 		return this.productRepo.save(product);
 	}
 
+	// 🟩 حذف محصول
 	async remove(id: number): Promise<void> {
 		const result = await this.productRepo.delete(id);
 		if (result.affected === 0) throw new NotFoundException('Product not found');

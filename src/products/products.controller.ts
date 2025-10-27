@@ -27,6 +27,11 @@ export class ProductsController {
 		return this.productsService.create(dto);
 	}
 
+	@Get('categories')
+	getAllCategories() {
+		return this.productsService.getAllCategories();
+	}
+
 	// ویرایش محصول
 	@UseGuards(JwtAuthGuard)
 	@Patch(':id')

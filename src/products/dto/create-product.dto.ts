@@ -14,6 +14,10 @@ export class CreateProductDto {
 	@Min(0)
 	price: number;
 
+	@IsOptional()
+	@IsString()
+	category?: string;
+
 	@Type(() => Number)
 	@IsNumber()
 	@Min(0)

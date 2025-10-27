@@ -52,6 +52,9 @@ export class Product {
 
 	// Relations
 
+	@Column({ type: 'varchar', length: 100, nullable: true })
+	category: string;
+
 	// 1. One-to-Many with Review
 	@OneToMany(() => Review, (review) => review.product)
 	reviews: Review[];
