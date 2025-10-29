@@ -1,56 +1,85 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Product } from '../entities/product.entity';
-import { User } from '../entities/user.entity';
-import { CreateProductDto } from '../products/dto/create-product.dto';
-import { UpdateProductDto } from '../products/dto/update-product.dto';
+import { Admin, AdminRole } from './admin.entity';
+import { Product } from 'src/entities/product.entity';
+import { Image } from 'src/entities/image.entity';
 
 @Injectable()
 export class AdminService {
 	constructor(
-		@InjectRepository(Product)
-		private readonly productRepo: Repository<Product>,
-		@InjectRepository(User)
-		private readonly userRepo: Repository<User>,
+		@InjectRepository(Admin) private readonly adminRepo: Repository<Admin>,
+		@InjectRepository(Admin) private readonly productRepository: Repository<Product>,
+		@InjectRepository(Admin) private readonly imageRepository: Repository<Image>,
 	) {}
 
-	// 🧩 محصولات
-	async findAllProducts(): Promise<Product[]> {
-		return this.productRepo.find({ relations: ['images', 'reviews'] });
+	async findAllAdmins() {
+		return this.adminRepo.find();
 	}
 
-	async findProductById(id: number): Promise<Product> {
-		const product = await this.productRepo.findOne({
-			where: { id },
-			relations: ['images', 'reviews'],
+	async deleteAdmin(adminId: number, operatorId: number) {
+		if (adminId === operatorId) {
+			throw new ForbiddenException('You cannot delete yourself');
+		}
+		const operator = await this.adminRepo.findOne({ where: { id: operatorId } });
+		if (!operator || operator.role !== AdminRole.SUPER_ADMIN) {
+			throw new ForbiddenException('Only SUPER_ADMIN can delete admins');
+		}
+
+		const admin = await this.adminRepo.findOne({ where: { id: adminId } });
+		if (!admin) throw new NotFoundException('Admin not found');
+
+		await this.adminRepo.delete(adminId);
+		return { success: true };
+	}
+
+	async toggleAdminActivation(adminId: number, operatorId: number, isActive: boolean) {
+		if (adminId === operatorId && !isActive) {
+			throw new ForbiddenException('You cannot deactivate your own account');
+		}
+		const operator = await this.adminRepo.findOne({ where: { id: operatorId } });
+		if (!operator || operator.role !== AdminRole.SUPER_ADMIN) {
+			throw new ForbiddenException('Only SUPER_ADMIN can toggle activation');
+		}
+
+		const admin = await this.adminRepo.findOne({ where: { id: adminId } });
+		if (!admin) throw new NotFoundException('Admin not found');
+
+		admin.isActive = isActive;
+		return this.adminRepo.save(admin);
+	}
+
+	async uploadProductImage(productId: number, file: Express.Multer.File) {
+		const product = await this.productRepository.findOne({
+			where: { id: productId },
+			relations: ['images'],
 		});
 		if (!product) throw new NotFoundException('محصول پیدا نشد');
-		return product;
-	}
 
-	async createProduct(dto: CreateProductDto): Promise<Product> {
-		const newProduct = this.productRepo.create({
-			...dto,
-			createdAt: new Date(),
+		const image = this.imageRepository.create({
+			product,
+			url: `/uploads/products/${file.filename}`,
+			isMain: product.images.length === 0,
 		});
-		return this.productRepo.save(newProduct);
+
+		return this.imageRepository.save(image);
 	}
 
-	async updateProduct(id: number, dto: UpdateProductDto): Promise<Product> {
-		const product = await this.findProductById(id);
-		Object.assign(product, dto);
-		return this.productRepo.save(product);
+	async setMainImage(productId: number, imageId: number) {
+		const product = await this.productRepository.findOne({
+			where: { id: productId },
+			relations: ['images'],
+		});
+		if (!product) throw new NotFoundException('محصول پیدا نشد');
+
+		product.images.forEach((img) => (img.isMain = img.id === imageId));
+		await this.imageRepository.save(product.images);
+		return { success: true };
 	}
 
-	async deleteProduct(id: number): Promise<{ message: string }> {
-		const result = await this.productRepo.delete(id);
-		if (result.affected === 0) throw new NotFoundException('محصول پیدا نشد');
-		return { message: 'محصول حذف شد ✅' };
-	}
-
-	// 👥 کاربران
-	async getAllUsers(): Promise<User[]> {
-		return this.userRepo.find();
+	async deleteImage(imageId: number) {
+		const image = await this.imageRepository.findOne({ where: { id: imageId } });
+		if (!image) throw new NotFoundException('عکس پیدا نشد');
+		return this.imageRepository.remove(image);
 	}
 }

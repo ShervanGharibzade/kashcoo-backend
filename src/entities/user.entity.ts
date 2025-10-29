@@ -10,6 +10,12 @@ export class User {
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Column({
+		type: 'varchar',
+		default: 'user',
+	})
+	role: 'user';
+
 	@Column()
 	firstName: string;
 

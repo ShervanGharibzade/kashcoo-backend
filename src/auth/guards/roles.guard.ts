@@ -1,35 +1,23 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { User } from '../../entities/user.entity';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
 	constructor(private reflector: Reflector) {}
 
 	canActivate(context: ExecutionContext): boolean {
-		// 👇 متادیتا رو از Decorator می‌خونه
-		const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-			context.getHandler(),
-			context.getClass(),
-		]);
+		const required = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
+		if (!required || required.length === 0) return true;
 
-		// اگه مسیر خاصی نقشی نخواسته باشه، اجازه بده
-		if (!requiredRoles) return true;
-
-		const request = context.switchToHttp().getRequest();
-		const user: User = request.user;
-
-		if (!user) {
-			throw new ForbiddenException('احراز هویت کاربر انجام نشده است');
+		const req = context.switchToHttp().getRequest();
+		const user = req.user;
+		if (!user || !user.role) {
+			throw new ForbiddenException('Access denied');
 		}
-
-		const hasRole = requiredRoles.includes(user.role);
-
-		if (!hasRole) {
-			throw new ForbiddenException('شما اجازه دسترسی به این بخش را ندارید 🚫');
+		if (!required.includes(user.role)) {
+			throw new ForbiddenException('Insufficient role');
 		}
-
 		return true;
 	}
 }

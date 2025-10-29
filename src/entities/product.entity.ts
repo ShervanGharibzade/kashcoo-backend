@@ -71,7 +71,10 @@ export class Product {
 	@OneToMany(() => OrderItem, (orderItem) => orderItem.product)
 	orderItems: OrderItem[];
 
-	@OneToMany(() => Image, (image) => image.product)
+	@OneToMany(() => Image, (image) => image.product, {
+		cascade: true,
+		eager: true,
+	})
 	images: Image[];
 
 	// 5. Many-to-One with Brand

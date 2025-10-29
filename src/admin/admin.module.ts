@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
-import { AdminController } from './admin.controller';
-import { AdminService } from './admin.service';
-import { ProductsModule } from '../products/products.module';
-import { UsersModule } from '../users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Product } from '../entities/product.entity';
-import { User } from '../entities/user.entity';
+import { Admin } from './admin.entity';
+import { AdminService } from './admin.service';
+import { AdminController } from './admin.controller';
+import { AdminAuthService } from './admin-auth.service';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([Product, User]), ProductsModule, UsersModule],
-	controllers: [AdminController],
-	providers: [AdminService],
-	exports: [AdminService],
+  imports: [
+    TypeOrmModule.forFeature([Admin]),
+    JwtModule.register({}),
+  ],
+  controllers: [AdminController],
+  providers: [AdminService, AdminAuthService],
+  exports: [AdminService],
 })
 export class AdminModule {}

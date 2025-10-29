@@ -7,7 +7,7 @@ export class Image {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	@Column({ type: 'varchar', length: 255 })
+	@Column()
 	url: string;
 
 	// 💡 اضافه کردن فیلد isMain
@@ -20,6 +20,8 @@ export class Image {
 	@UpdateDateColumn()
 	updatedAt: Date;
 
-	@ManyToOne(() => Product, (product) => product.images)
+	@ManyToOne(() => Product, (product) => product.images, {
+		onDelete: 'CASCADE',
+	})
 	product: Product;
 }

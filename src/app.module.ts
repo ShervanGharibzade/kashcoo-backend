@@ -27,6 +27,9 @@ import { FavoriteList } from './entities/favorite-list.entity';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { AdminModule } from './admin/admin.module';
+import { Admin } from './admin/admin.entity';
+
+// admin pass :SupreAdmin@#2025!
 
 @Module({
 	imports: [
@@ -38,7 +41,7 @@ import { AdminModule } from './admin/admin.module';
 			username: process.env.DB_USER || 'postgres',
 			password: process.env.DB_PASS || 'postgres',
 			database: process.env.DB_NAME || 'backpack_db',
-			entities: [User, Token, Product, Backpack, Brand, Image, Review, Like, FavoriteList, Order, OrderItem],
+			entities: [User, Token, Product, Backpack, Brand, Image, Review, Like, FavoriteList, Order, OrderItem, Admin],
 			synchronize: true, // ❗ در محیط production حتما false کن
 		}),
 
