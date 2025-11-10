@@ -15,14 +15,23 @@ export class AdminAuthService {
 	) {}
 
 	async login(dto: AdminLoginDto) {
+		const tt = await bcrypt.hash('SupreAdmin@#2025!', 10);
+		console.log(tt);
+		const ttt = await bcrypt.compare('SupreAdmin@#2025!', tt);
+		console.log(ttt, 'ppp');
+
 		const admin = await this.adminRepo.findOne({ where: { email: dto.email } });
+		console.log(admin, 'lol');
+
 		if (!admin) throw new UnauthorizedException('Invalid credentials');
 
 		const ok = await bcrypt.compare(dto.password, admin.password);
-		if (!ok) throw new UnauthorizedException('Invalid credentials');
+		console.log(ok, 'ok');
 
+		if (!ok) throw new UnauthorizedException('Invalid credentials', admin.password);
+		console.log(admin, 'ok2');
 		if (!admin.isActive) throw new ForbiddenException('Admin account is not active');
-
+		console.log(admin, 'ok23');
 		const payload = { sub: admin.id, role: admin.role, scope: 'admin' };
 		const token = await this.jwt.signAsync(payload);
 		return { access_token: token, admin: { id: admin.id, email: admin.email, role: admin.role } };

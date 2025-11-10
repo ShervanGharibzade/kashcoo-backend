@@ -33,6 +33,10 @@ export class UsersService {
 		});
 	}
 
+	async findAll() {
+		return this.userRepo.find();
+	}
+
 	// 3. FIND BY PHONE
 	async findByPhone(phoneNumber: string): Promise<User | null> {
 		// استفاده از findOneBy برای سادگی

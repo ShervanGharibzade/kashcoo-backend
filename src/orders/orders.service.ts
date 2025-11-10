@@ -73,4 +73,8 @@ export class OrdersService {
 			relations: ['items', 'items.product'],
 		});
 	}
+
+	async findAll() {
+		return this.orderRepo.find();
+	}
 }

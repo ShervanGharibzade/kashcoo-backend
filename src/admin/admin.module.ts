@@ -7,12 +7,15 @@ import { AdminAuthService } from './admin-auth.service';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Admin]),
-    JwtModule.register({}),
-  ],
-  controllers: [AdminController],
-  providers: [AdminService, AdminAuthService],
-  exports: [AdminService],
+	imports: [
+		TypeOrmModule.forFeature([Admin]),
+		JwtModule.register({
+			secret: 'SECRET_KEY_123',
+			signOptions: { expiresIn: '48h' },
+		}),
+	],
+	controllers: [AdminController],
+	providers: [AdminService, AdminAuthService],
+	exports: [AdminService],
 })
 export class AdminModule {}

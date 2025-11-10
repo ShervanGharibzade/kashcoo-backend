@@ -14,8 +14,39 @@ export class ProductsService {
 
 	// 🟩 ایجاد محصول
 	async create(dto: CreateProductDto): Promise<Product> {
-		const product = this.productRepo.create(dto);
-		return this.productRepo.save(product);
+		try {
+			console.log('🟦 CreateProduct DTO:', dto);
+			const product = this.productRepo.create(dto);
+			const saved = await this.productRepo.save(product);
+			console.log('✅ Saved product:', saved);
+			return saved;
+		} catch (error) {
+			console.error('❌ Error in ProductService.create:', error);
+
+			// درصورتی‌که خطای دیتابیس یا TypeORM باشه، جزئیات را نمایش می‌دهیم
+			if (error.code === '22003') {
+				// مثال: عدد خارج از محدوده
+				throw new Error(`Price value exceeds allowed range: ${dto.price}`);
+			}
+
+			if (error.code === '23505') {
+				// مثال: کلید تکراری
+				throw new Error('Duplicate entry: product with same name already exists');
+			}
+
+			if (error.code === '22P02') {
+				// مثال: نوع داده نادرست
+				throw new Error('Invalid datatype for one of fields');
+			}
+
+			if (error.code === '23503') {
+				// مثال: foreign key violation
+				throw new Error('Referenced category or relation not found');
+			}
+
+			// fallback: خطای ناشناخته
+			throw new Error(`Unexpected error saving product: ${error.message}`);
+		}
 	}
 
 	async getAllCategories(): Promise<string[]> {
