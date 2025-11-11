@@ -1,5 +1,15 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { Query } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Post,
+	Patch,
+	Delete,
+	Body,
+	Param,
+	Query,
+	UseGuards,
+	BadRequestException,
+} from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -15,9 +25,26 @@ export class ProductsController {
 		return this.productsService.findAll(query);
 	}
 
+	// مسیرهای خاص حتماً قبل از :id قرار بگیرند
+	@Get('categories')
+	getAllCategories() {
+		return this.productsService.getAllCategories();
+	}
+
+	@Get('compare')
+	async compareProducts(@Query('ids') ids: string) {
+		const idList = ids.split(',').map((id) => +id);
+		return this.productsService.findByIds(idList);
+	}
+
+	// مسیر داینامیک در انتها
 	@Get(':id')
-	findOne(@Param('id') id: number) {
-		return this.productsService.findOne(id);
+	findOne(@Param('id') id: string) {
+		const numericId = parseInt(id, 10);
+		if (isNaN(numericId)) {
+			throw new BadRequestException('شناسه محصول معتبر نیست');
+		}
+		return this.productsService.findOne(numericId);
 	}
 
 	// افزودن محصول (فقط ادمین)
@@ -25,11 +52,6 @@ export class ProductsController {
 	@Post()
 	create(@Body() dto: CreateProductDto) {
 		return this.productsService.create(dto);
-	}
-
-	@Get('categories')
-	getAllCategories() {
-		return this.productsService.getAllCategories();
 	}
 
 	// ویرایش محصول
@@ -44,11 +66,5 @@ export class ProductsController {
 	@Delete(':id')
 	remove(@Param('id') id: number) {
 		return this.productsService.remove(id);
-	}
-
-	@Get('compare')
-	async compareProducts(@Query('ids') ids: string) {
-		const idList = ids.split(',').map((id) => +id);
-		return this.productsService.findByIds(idList);
 	}
 }

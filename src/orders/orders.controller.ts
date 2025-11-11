@@ -23,7 +23,7 @@ export class OrdersController {
 	@Get('me')
 	async findMyOrders(@Req() req: Request) {
 		const user = req.user as User;
-		return this.ordersService.findForUser(user);
+		return this.ordersService.findForUser(user.id);
 	}
 
 	@Get()

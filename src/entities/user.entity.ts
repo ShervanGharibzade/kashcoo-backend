@@ -4,6 +4,7 @@ import { Review } from './review.entity';
 import { Like } from './like.entity';
 import { FavoriteList } from './favorite-list.entity';
 import { Token } from './token.entity';
+import { Address } from './address.entity';
 
 @Entity()
 export class User {
@@ -42,6 +43,9 @@ export class User {
 
 	@OneToMany(() => FavoriteList, (fav) => fav.user)
 	favoriteLists: FavoriteList[];
+
+	@OneToMany(() => Address, (address) => address.user)
+	addresses: Address[];
 
 	@OneToOne(() => Token, (token) => token.user)
 	token: Token;

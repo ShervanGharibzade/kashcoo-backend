@@ -20,6 +20,7 @@ export class OrdersService {
 	async create(user: User, dto: CreateOrderDto) {
 		let total = 0;
 		const items: OrderItem[] = [];
+		console.log('done');
 
 		for (const itemData of dto.items) {
 			const product = await this.productRepo.findOne({
@@ -54,7 +55,7 @@ export class OrdersService {
 			user,
 			items,
 			totalPrice: total,
-			status: 'PENDING',
+			status: 'pending',
 		});
 
 		return this.orderRepo.save(order);
@@ -67,9 +68,9 @@ export class OrdersService {
 		return this.orderRepo.save(order);
 	}
 
-	async findForUser(user: User) {
+	async findForUser(userId: number) {
 		return this.orderRepo.find({
-			where: { user: { id: user.id } },
+			where: { user: { id: userId } },
 			relations: ['items', 'items.product'],
 		});
 	}

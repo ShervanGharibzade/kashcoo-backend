@@ -15,14 +15,10 @@ export class ProductsService {
 	// 🟩 ایجاد محصول
 	async create(dto: CreateProductDto): Promise<Product> {
 		try {
-			console.log('🟦 CreateProduct DTO:', dto);
 			const product = this.productRepo.create(dto);
 			const saved = await this.productRepo.save(product);
-			console.log('✅ Saved product:', saved);
 			return saved;
 		} catch (error) {
-			console.error('❌ Error in ProductService.create:', error);
-
 			// درصورتی‌که خطای دیتابیس یا TypeORM باشه، جزئیات را نمایش می‌دهیم
 			if (error.code === '22003') {
 				// مثال: عدد خارج از محدوده
@@ -49,17 +45,18 @@ export class ProductsService {
 		}
 	}
 
-	async getAllCategories(): Promise<string[]> {
-		// 👇 فقط ستون category رو می‌گیریم
-		const result = await this.productRepo
-			.createQueryBuilder('product')
-			.select('DISTINCT product.category', 'category')
-			.where('product.category IS NOT NULL')
-			.orderBy('product.category', 'ASC')
-			.getRawMany();
+	async getAllCategories(): Promise<{ key: string; value: string }[]> {
+		// فقط ستون category رو از تمام محصولات می‌گیریم
+		const result = await this.productRepo.find({ select: ['category'] });
 
-		// 👇 خروجی: [{ category: 'کوله‌پشتی' }, { category: 'کیف لپ‌تاپ' }, ...]
-		return result.map((row) => row.category);
+		// فیلتر مقادیر خالی، trim و حذف تکراری‌ها
+		const uniqueCategories = Array.from(new Set(result.map((r) => r.category?.trim()).filter(Boolean)));
+
+		// تغییر خروجی به ساختار key/value
+		return uniqueCategories.map((category) => ({
+			key: category,
+			value: category,
+		}));
 	}
 
 	// 🟩 دریافت همه محصولات با فیلترینگ و مرتب‌سازی پویا
