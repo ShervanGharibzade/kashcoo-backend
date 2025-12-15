@@ -11,7 +11,7 @@ async function bootstrap() {
 	app.enableCors({
 		origin: '*', // یا آدرس فرانت‌اند شما (مثلاً http://localhost:3000)
 		methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-		credentials: true,
+		credentials: false,
 		// 💡 رفع مشکل Preflight: اضافه کردن هدر 'time-zone'
 		allowedHeaders: 'Content-Type, Accept, Authorization, time-zone',
 	});
