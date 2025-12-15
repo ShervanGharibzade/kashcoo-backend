@@ -27,19 +27,19 @@ export class UsersController {
 		return this.usersService.findAllAddresses(user.id);
 	}
 
-	@Post('me/addresses')
+	@Post('addresses')
 	async createAddress(@Req() req: Request, @Body() body: Partial<Address>) {
 		const user = req.user as User;
 		return this.usersService.createAddress(user, body);
 	}
 
-	@Patch('me/addresses/:id')
+	@Patch('addresses/:id')
 	async updateAddress(@Req() req: Request, @Param('id') id: string, @Body() body: Partial<Address>) {
 		const user = req.user as User;
 		return this.usersService.updateAddress(user, Number(id), body);
 	}
 
-	@Delete('me/addresses/:id')
+	@Delete('addresses/:id')
 	async removeAddress(@Req() req: Request, @Param('id') id: string) {
 		const user = req.user as User;
 		return this.usersService.removeAddress(user, Number(id));
