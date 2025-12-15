@@ -4,6 +4,31 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Address } from '../entities/address.entity';
 
+const ALLOWED_ADDRESS_FIELDS: (keyof Address)[] = [
+	'fullName',
+	'province',
+	'city',
+	'street',
+	'postalCode',
+	'phone',
+	'isDefault',
+];
+
+function sanitizePatch(data: Partial<Address>): Partial<Address> {
+	const clean: Partial<Address> = {};
+
+	for (const key of ALLOWED_ADDRESS_FIELDS) {
+		const value = data[key];
+
+		if (value === undefined || value === null) continue;
+		if (typeof value === 'string' && value.trim() === '') continue;
+
+		(clean as Partial<Record<keyof Address, unknown>>)[key] = value;
+	}
+
+	return clean;
+}
+
 @Injectable()
 export class UsersService {
 	constructor(
@@ -15,7 +40,6 @@ export class UsersService {
 
 	// ------------------- USER METHODS -------------------
 
-	// 1. CREATE USER
 	async create(userData: Partial<User>): Promise<User> {
 		try {
 			const user = this.userRepo.create(userData);
@@ -28,24 +52,27 @@ export class UsersService {
 		}
 	}
 
-	// 2. FIND USER BY EMAIL
 	async findByEmail(email: string, options?: any): Promise<User | null> {
 		return this.userRepo.findOne({ where: { email }, ...options });
 	}
 
-	// 3. FIND USER BY PHONE
 	async findByPhone(phoneNumber: string): Promise<User | null> {
-		return this.userRepo.findOne({ where: { phoneNumber }, relations: ['token'] });
+		return this.userRepo.findOne({
+			where: { phoneNumber },
+			relations: ['token'],
+		});
 	}
 
-	// 4. FIND USER BY ID
 	async findById(id: number): Promise<User> {
-		const user = await this.userRepo.findOne({ where: { id }, relations: ['token'] });
+		const user = await this.userRepo.findOne({
+			where: { id },
+			relations: ['token'],
+		});
+
 		if (!user) throw new NotFoundException(`User with ID ${id} not found`);
 		return user;
 	}
 
-	// 5. UPDATE USER
 	async update(id: number, data: Partial<User>): Promise<User> {
 		const user = await this.userRepo.findOneBy({ id });
 		if (!user) throw new NotFoundException(`User with ID ${id} not found`);
@@ -61,71 +88,90 @@ export class UsersService {
 		}
 	}
 
-	// 6. REMOVE USER
 	async remove(id: number): Promise<void> {
 		const result = await this.userRepo.delete(id);
-		if (result.affected === 0) throw new NotFoundException(`User with ID ${id} not found`);
+		if (result.affected === 0) {
+			throw new NotFoundException(`User with ID ${id} not found`);
+		}
 	}
 
-	// 7. LIST ALL USERS
 	async findAll(): Promise<User[]> {
 		return this.userRepo.find();
 	}
 
 	// ------------------- ADDRESS METHODS -------------------
 
-	// CREATE ADDRESS
 	async createAddress(user: User, addressData: Partial<Address>): Promise<Address> {
+		const cleanData = sanitizePatch(addressData);
+
 		try {
-			if (addressData.isDefault) {
-				// reset previous default address
+			if (cleanData.isDefault === true) {
 				await this.addressRepo.update({ user: { id: user.id }, isDefault: true }, { isDefault: false });
 			}
 
-			const address = this.addressRepo.create({ ...addressData, user });
+			const address = this.addressRepo.create({
+				...cleanData,
+				user,
+			});
+
 			return await this.addressRepo.save(address);
 		} catch (error) {
-			console.error(error); // log actual DB error
+			console.error(error);
 			throw new InternalServerErrorException('Failed to create address.');
 		}
 	}
 
-	// LIST ALL ADDRESSES FOR A USER
-	async findAllAddresses(user: number): Promise<Address[]> {
+	async findAllAddresses(userId: number): Promise<Address[]> {
 		return this.addressRepo.find({
-			where: { user: { id: user } },
-			order: { isDefault: 'DESC', createdAt: 'DESC' },
+			where: { user: { id: userId } },
+			order: {
+				isDefault: 'DESC',
+				createdAt: 'DESC',
+			},
 		});
 	}
 
-	// FIND ADDRESS BY ID
 	async findAddressById(user: User, id: number): Promise<Address> {
-		const address = await this.addressRepo.findOne({ where: { id, user } });
-		if (!address) throw new NotFoundException(`Address with ID ${id} not found`);
+		const address = await this.addressRepo.findOne({
+			where: { id, user: { id: user.id } },
+		});
+
+		if (!address) {
+			throw new NotFoundException(`Address with ID ${id} not found`);
+		}
+
 		return address;
 	}
 
-	// UPDATE ADDRESS
 	async updateAddress(user: User, id: number, data: Partial<Address>): Promise<Address> {
 		const address = await this.findAddressById(user, id);
-		if (data.isDefault) {
-			await this.addressRepo.update({ user, isDefault: true }, { isDefault: false });
+
+		const cleanData = sanitizePatch(data);
+
+		if (cleanData.isDefault === true) {
+			await this.addressRepo.update({ user: { id: user.id }, isDefault: true }, { isDefault: false });
 		}
-		Object.assign(address, data);
+
+		Object.assign(address, cleanData);
+
 		try {
 			return await this.addressRepo.save(address);
 		} catch (error) {
+			console.error(error);
 			throw new InternalServerErrorException(`Failed to update address with ID ${id}`);
 		}
 	}
 
-	// REMOVE ADDRESS
-	async removeAddress(user: User, id: number): Promise<void> {
-		const address = await this.findAddressById(user, id);
-		try {
-			await this.addressRepo.remove(address);
-		} catch (error) {
-			throw new InternalServerErrorException(`Failed to remove address with ID ${id}`);
+	async removeAddress(user: User, id: number) {
+		const result = await this.addressRepo.delete({
+			id,
+			user: { id: user.id },
+		});
+
+		if (result.affected === 0) {
+			throw new NotFoundException(`Address with ID ${id} not found`);
 		}
+
+		return { message: 'Address removed successfully' };
 	}
 }
