@@ -20,7 +20,6 @@ export class OrdersService {
 	async create(user: User, dto: CreateOrderDto) {
 		let total = 0;
 		const items: OrderItem[] = [];
-		console.log('done');
 
 		for (const itemData of dto.items) {
 			const product = await this.productRepo.findOne({

@@ -1,27 +1,13 @@
 // src/entities/product.entity.ts
-import {
-	Entity,
-	PrimaryGeneratedColumn,
-	Column,
-	OneToMany,
-	ManyToOne,
-	CreateDateColumn,
-	UpdateDateColumn,
-	TableInheritance,
-} from 'typeorm';
-import { User } from './user.entity';
-import { Brand } from './brand.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Review } from './review.entity';
 import { Like } from './like.entity';
 import { FavoriteList } from './favorite-list.entity';
 import { OrderItem } from './order-item.entity';
 import { Image } from './image.entity';
+import { Brand } from './brand.entity';
 
 @Entity('products')
-@TableInheritance({
-	// 💡 تعریف ستون Discriminator مستقیماً در اینجا
-	column: { name: 'type', type: 'varchar' },
-})
 export class Product {
 	@PrimaryGeneratedColumn()
 	id: number;
@@ -77,11 +63,16 @@ export class Product {
 	})
 	images: Image[];
 
-	// 5. Many-to-One with Brand
-	@Column({ type: 'varchar', length: 255, nullable: true })
-	brand: string;
+	// 5. Many-to-One with Brand (relation side for Brand.products)
+	@ManyToOne(() => Brand, (brand) => brand.products, {
+		nullable: true,
+		onDelete: 'SET NULL',
+	})
+	@JoinColumn({ name: 'brandId' })
+	brand: Brand;
 
-	creator: User;
+	@Column({ type: 'int', nullable: true })
+	brandId: number | null;
 
 	// Getter for final price
 	get finalPrice(): number {

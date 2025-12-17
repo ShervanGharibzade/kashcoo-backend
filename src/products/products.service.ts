@@ -15,9 +15,19 @@ export class ProductsService {
 	// 🟩 ایجاد محصول
 	async create(dto: CreateProductDto): Promise<Product> {
 		try {
-			const product = this.productRepo.create(dto);
-			const saved = await this.productRepo.save(product);
-			return saved;
+			const { brandId, ...rest } = dto;
+
+			const product = this.productRepo.create({
+				...rest,
+				...(brandId
+					? {
+							// فقط آی‌دی برند را ست می‌کنیم تا رابطه برقرار شود
+							brand: { id: brandId } as any,
+					  }
+					: {}),
+			});
+
+			return await this.productRepo.save(product);
 		} catch (error) {
 			// درصورتی‌که خطای دیتابیس یا TypeORM باشه، جزئیات را نمایش می‌دهیم
 			if (error.code === '22003') {

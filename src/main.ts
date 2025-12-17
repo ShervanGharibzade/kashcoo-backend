@@ -3,6 +3,7 @@ import { join } from 'path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as express from 'express'; // 💡 اطمینان حاصل کن که yarn add @types/express --dev را اجرا کرده‌ای.
+import * as bcrypt from 'bcrypt';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);

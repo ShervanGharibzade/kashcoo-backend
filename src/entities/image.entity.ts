@@ -1,5 +1,13 @@
 // src/entities/image.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+	Entity,
+	PrimaryGeneratedColumn,
+	Column,
+	ManyToOne,
+	CreateDateColumn,
+	UpdateDateColumn,
+	JoinColumn,
+} from 'typeorm';
 import { Product } from './product.entity';
 
 @Entity('images')
@@ -23,5 +31,9 @@ export class Image {
 	@ManyToOne(() => Product, (product) => product.images, {
 		onDelete: 'CASCADE',
 	})
+	@JoinColumn({ name: 'productId' })
 	product: Product;
+
+	@Column()
+	productId: number;
 }

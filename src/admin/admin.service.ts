@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Admin, AdminRole } from './admin.entity';
@@ -8,9 +8,12 @@ import { Image } from 'src/entities/image.entity';
 @Injectable()
 export class AdminService {
 	constructor(
+		// اصلی برای مدیریت ادمین‌ها
 		@InjectRepository(Admin) private readonly adminRepo: Repository<Admin>,
-		@InjectRepository(Admin) private readonly productRepository: Repository<Product>,
-		@InjectRepository(Admin) private readonly imageRepository: Repository<Image>,
+		// ریپازیتوری صحیح برای محصولات
+		@InjectRepository(Product) private readonly productRepository: Repository<Product>,
+		// ریپازیتوری صحیح برای تصاویر
+		@InjectRepository(Image) private readonly imageRepository: Repository<Image>,
 	) {}
 
 	async findAllAdmins() {
@@ -50,30 +53,64 @@ export class AdminService {
 	}
 
 	async uploadProductImage(productId: number, file: Express.Multer.File) {
-		const product = await this.productRepository.findOne({
-			where: { id: productId },
-			relations: ['images'],
+		if (!file) {
+			throw new BadRequestException('فایل ارسال نشده است');
+		}
+
+		const qbAll = await this.productRepository.find();
+
+		// ✅ دور زدن STI
+		const product = await this.productRepository
+			.createQueryBuilder('product')
+			.where('product.id = :id', { id: productId })
+			.getOne();
+
+		if (!product) {
+			throw new NotFoundException('محصول پیدا نشد');
+		}
+
+		// ✅ بدون reliance روی eager / join
+		const imagesCount = await this.imageRepository.count({
+			where: {
+				product: { id: productId },
+			},
 		});
-		if (!product) throw new NotFoundException('محصول پیدا نشد');
 
 		const image = this.imageRepository.create({
 			product,
-			url: `/uploads/products/${file.filename}`,
-			isMain: product.images.length === 0,
+			url: `uploads/products/${file.filename}`,
+			isMain: imagesCount === 0,
 		});
 
 		return this.imageRepository.save(image);
 	}
 
 	async setMainImage(productId: number, imageId: number) {
-		const product = await this.productRepository.findOne({
-			where: { id: productId },
-			relations: ['images'],
+		// اول مطمئن می‌شویم خود عکس برای همین محصول وجود دارد
+		const image = await this.imageRepository.findOne({
+			where: {
+				id: imageId,
+				product: { id: productId },
+			},
+			relations: ['product'],
 		});
-		if (!product) throw new NotFoundException('محصول پیدا نشد');
 
-		product.images.forEach((img) => (img.isMain = img.id === imageId));
-		await this.imageRepository.save(product.images);
+		if (!image) {
+			throw new NotFoundException('عکس برای این محصول پیدا نشد');
+		}
+
+		// همه عکس‌های این محصول را از حالت main خارج می‌کنیم
+		await this.imageRepository
+			.createQueryBuilder()
+			.update()
+			.set({ isMain: false })
+			.where('productId = :productId', { productId })
+			.execute();
+
+		// و این عکس را main می‌کنیم
+		image.isMain = true;
+		await this.imageRepository.save(image);
+
 		return { success: true };
 	}
 

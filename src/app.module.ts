@@ -1,4 +1,3 @@
-import { Backpack } from './entities/backpack.entity';
 import { Brand } from './entities/brand.entity';
 import { Product } from './entities/product.entity';
 import { Review } from './entities/review.entity';
@@ -38,7 +37,6 @@ import { Image } from './entities/image.entity';
 				User,
 				Token,
 				Product,
-				Backpack,
 				Brand,
 				Image,
 				Review,

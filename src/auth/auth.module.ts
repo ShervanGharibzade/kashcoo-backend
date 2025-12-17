@@ -15,7 +15,7 @@ import { UsersModule } from 'src/users/users.module';
 		PassportModule,
 		TypeOrmModule.forFeature([Token]),
 		JwtModule.register({
-			secret: process.env.JWT_SECRET,
+			secret: process.env.JWT_SECRET || 'mysupersecretkey',
 			signOptions: { expiresIn: '48h' },
 		}),
 	],

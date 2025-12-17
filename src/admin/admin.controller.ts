@@ -74,32 +74,34 @@ export class AdminController {
 		return this.adminService.deleteAdmin(id, operatorId);
 	}
 
-	@Post(':id/images')
+	/* --------------------- Product Images --------------------- */
+
+	@Post('products/:productId/images')
 	@Roles(AdminRole.ADMIN, AdminRole.SUPER_ADMIN)
 	@UseInterceptors(
 		FileInterceptor('file', {
 			storage: diskStorage({
 				destination: './uploads/products',
-				filename: (req, file, cb) => {
-					const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+				filename: (_req, file, cb) => {
+					const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 					cb(null, unique + extname(file.originalname));
 				},
 			}),
 		}),
 	)
-	uploadImage(@Param('id') id: number, @UploadedFile() file: Express.Multer.File) {
-		return this.adminService.uploadProductImage(id, file);
+	uploadProductImage(@Param('productId', ParseIntPipe) productId: number, @UploadedFile() file: Express.Multer.File) {
+		return this.adminService.uploadProductImage(productId, file);
 	}
 
-	@Patch(':productId/images/:imageId/set-main')
+	@Patch('products/:productId/images/:imageId/main')
 	@Roles(AdminRole.ADMIN, AdminRole.SUPER_ADMIN)
-	setMainImage(@Param('productId') pid: number, @Param('imageId') iid: number) {
-		return this.adminService.setMainImage(pid, iid);
+	setMainImage(@Param('productId', ParseIntPipe) productId: number, @Param('imageId', ParseIntPipe) imageId: number) {
+		return this.adminService.setMainImage(productId, imageId);
 	}
 
-	@Delete('images/:id')
+	@Delete('products/images/:imageId')
 	@Roles(AdminRole.ADMIN, AdminRole.SUPER_ADMIN)
-	deleteImage(@Param('id') id: number) {
-		return this.adminService.deleteImage(id);
+	deleteImage(@Param('imageId', ParseIntPipe) imageId: number) {
+		return this.adminService.deleteImage(imageId);
 	}
 }

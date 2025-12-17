@@ -29,7 +29,9 @@ export class CreateProductDto {
 	@Min(0)
 	stock: number;
 
+	// شناسه برند مرتبط (کلید خارجی به Brand)
 	@IsOptional()
-	@IsString()
-	brand?: string; // حالا رشته‌ای
+	@Type(() => Number)
+	@IsNumber()
+	brandId?: number;
 }
